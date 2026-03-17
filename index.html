@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claw-Fi | Neon Sentry Architecture</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        void: '#050505',
+                        metal: '#1A1B26',
+                        metalLight: '#24283B',
+                        purple: '#8A2BE2',
+                        magenta: '#FF007F',
+                        terminal: '#E2E8F0',
+                        muted: '#94A3B8',
+                    },
+                    fontFamily: {
+                        display: ['Orbitron', 'sans-serif'],
+                        mono: ['Space Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            background-color: #050505;
+            color: #E2E8F0;
+            font-family: 'Space Mono', monospace;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .glow-purple {
+            box-shadow: 0 0 10px rgba(138, 43, 226, 0.4);
+        }
+
+        .glow-magenta {
+            box-shadow: 0 0 10px rgba(255, 0, 127, 0.5);
+        }
+
+        .hover-glow-purple {
+            transition: all 0.3s ease;
+        }
+
+        .hover-glow-purple:hover {
+            box-shadow: 0 0 15px rgba(138, 43, 226, 0.6);
+            border-color: #8A2BE2 !important;
+        }
+
+        @keyframes scanline {
+            0% {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
+        }
+
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background: linear-gradient(to bottom, transparent, #8A2BE2, transparent);
+            animation: scanline 4s linear infinite;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        @keyframes dataFlow {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        .animated-line {
+            background: linear-gradient(90deg, transparent 0%, #FF007F 50%, transparent 100%);
+            background-size: 200% 100%;
+            animation: dataFlow 2s linear infinite;
+        }
+
+        /* Utility for transitions */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Hide scrollbar for cleaner terminal look */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #050505;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #24283B;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8A2BE2;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col relative">
+
+    <div class="scanline"></div>
+
+    <!-- HEADER -->
+    <header class="border-b border-metal bg-void/90 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <i data-lucide="hexagon" class="text-purple animate-pulse w-7 h-7"></i>
+                <h1 class="text-2xl font-display font-bold tracking-widest text-terminal">
+                    CLAW<span class="text-magenta">-</span>FI
+                </h1>
+            </div>
+
+            <button id="xray-toggle"
+                class="flex items-center gap-2 px-4 py-2 font-display text-sm uppercase tracking-wider transition-all duration-300 border border-purple bg-transparent text-purple hover:bg-purple/10 hover:shadow-[0_0_15px_rgba(138,43,226,0.4)] rounded-none cursor-pointer">
+                <i data-lucide="eye" id="xray-icon" class="w-4 h-4"></i>
+                <span>[ X-RAY VIEW ]</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-grow max-w-6xl mx-auto w-full p-6 flex flex-col relative">
+
+        <!-- LAYER 1: USER INTERFACE (MESSAGING-FIRST) -->
+        <div id="view-chat" class="flex-grow flex flex-col justify-end max-w-3xl mx-auto w-full mt-12 mb-8 fade-in">
+            <div class="text-center mb-12">
+                <h2 class="font-display text-3xl mb-4 text-terminal">INVISIBLE COMPLEXITY</h2>
+                <p class="text-muted max-w-xl mx-auto text-sm leading-relaxed">
+                    You don't need to monitor dashboards. Claw-Fi's autonomous agent runs locally, continuously
+                    adjusting your positions and defending against market volatility.
+                </p>
+            </div>
+
+            <div id="chat-history" class="space-y-6 mb-8 flex-grow flex flex-col justify-end">
+                <!-- Initial Sentry Alert -->
+                <div class="flex flex-col w-full items-start fade-in-up">
+                    <div
+                        class="p-4 bg-metal border-t border-r border-b border-metalLight border-l-2 border-l-magenta shadow-[0_0_15px_rgba(255,0,127,0.15)]">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i data-lucide="shield-alert" class="w-4 h-4 text-magenta animate-pulse"></i>
+                            <span class="font-display font-bold text-sm text-magenta">[ SENTRY ALERT ]</span>
+                            <span class="text-muted text-xs ml-4" id="initial-time"></span>
+                        </div>
+                        <p class="text-terminal text-sm leading-relaxed">
+                            Hey, a whale just dumped HBAR. I preemptively narrowed your Bonzo Vault range to minimize
+                            impermanent loss. Current APY: 14%. Reply 'withdraw' if you want out.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <form id="chat-form" class="relative">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <i data-lucide="terminal" class="w-[18px] h-[18px] text-purple"></i>
+                </div>
+                <input type="text" id="chat-input" autocomplete="off"
+                    placeholder="Awaiting terminal input... (Try typing 'withdraw')"
+                    class="w-full bg-metal border border-metalLight text-terminal pl-12 pr-4 py-4 focus:outline-none focus:border-purple transition-colors rounded-none" />
+                <button type="submit"
+                    class="absolute inset-y-0 right-0 px-6 bg-metalLight text-terminal font-display text-sm hover:bg-purple hover:text-white transition-colors border-l border-metal cursor-pointer rounded-none">
+                    EXECUTE
+                </button>
+            </form>
+        </div>
+
+        <!-- LAYERS 2, 3, 4: ARCHITECTURE DASHBOARD (Hidden by default) -->
+        <div id="view-xray" class="hidden flex-grow flex-col space-y-12 py-8 fade-in">
+
+            <!-- LAYER 2: THE CORE AGENT RUNTIME -->
+            <section class="relative">
+                <div class="flex items-center gap-3 mb-6">
+                    <i data-lucide="cpu" class="text-purple w-6 h-6"></i>
+                    <h2 class="font-display text-xl tracking-widest text-terminal">[ THE CORE AGENT RUNTIME ]</h2>
+                    <div class="flex-grow h-px bg-metal ml-4"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                    <!-- Memory & Context -->
+                    <div class="bg-metal border border-metalLight p-6 hover-glow-purple">
+                        <h3 class="text-muted font-display text-sm mb-4 border-b border-metalLight pb-2">MEMORY &
+                            CONTEXT</h3>
+                        <div class="space-y-3 font-mono text-xs text-terminal">
+                            <div class="flex justify-between"><span>Active Position:</span> <span
+                                    class="text-purple">Bonzo Vault USDC/HBAR</span></div>
+                            <div class="flex justify-between"><span>Risk Tolerance:</span> <span>Moderate (Alpha)</span>
+                            </div>
+                            <div class="flex justify-between"><span>Pre-Auth Limits:</span> <span>Max Slippage
+                                    0.5%</span></div>
+                            <div class="flex justify-between"><span>Local Wallet State:</span> <span
+                                    class="text-[#00FF7F]">Encrypted & Synced</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Reasoning Engine -->
+                    <div class="bg-metal border border-purple p-6 glow-purple relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-2 h-2 bg-magenta animate-pulse m-4"></div>
+                        <h3
+                            class="text-magenta font-display text-sm mb-4 border-b border-metalLight pb-2 flex items-center gap-2">
+                            <i data-lucide="activity" class="w-3.5 h-3.5"></i> REASONING ENGINE
+                        </h3>
+                        <div class="font-mono text-xs text-muted space-y-2">
+                            <p>&gt; Ingesting state changes from Skills Layer...</p>
+                            <p>&gt; Evaluating market conditions against Context.</p>
+                            <p class="text-terminal">&gt; ACTION: Preparing defensive withdrawal strategy.</p>
+                            <p class="text-magenta animate-pulse">&gt; AWAITING USER CONFIRMATION...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="absolute left-1/2 bottom-[-48px] w-px h-12 bg-metal -translate-x-1/2 z-0 hidden md:block">
+                    <div class="w-full h-full animated-line"></div>
+                </div>
+            </section>
+
+            <!-- LAYER 3: THE SKILLS LAYER -->
+            <section class="relative pt-6">
+                <div class="flex items-center gap-3 mb-6">
+                    <i data-lucide="database" class="text-magenta w-6 h-6"></i>
+                    <h2 class="font-display text-xl tracking-widest text-terminal">[ THE SKILLS LAYER ]</h2>
+                    <div class="flex-grow h-px bg-metal ml-4"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+                    <!-- Sentry Node -->
+                    <div class="relative">
+                        <div
+                            class="bg-metal border border-magenta p-5 h-full relative z-10 flex flex-col hover-glow-purple shadow-[0_0_10px_rgba(255,0,127,0.2)]">
+                            <div class="flex justify-between items-center mb-4 border-b border-metalLight pb-2">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="shield-alert" class="w-5 h-5 text-magenta"></i>
+                                    <h4 class="font-display text-sm tracking-wider text-magenta">SENTRY SKILL</h4>
+                                </div>
+                                <span class="text-[10px] font-mono px-2 py-1 bg-metalLight text-muted">ACTIVE</span>
+                            </div>
+                            <div class="space-y-2 flex-grow">
+                                <div class="font-mono text-xs text-muted flex items-center gap-2"><span
+                                        class="text-metalLight">›</span> Listening: X/Twitter API</div>
+                                <div class="font-mono text-xs text-muted flex items-center gap-2"><span
+                                        class="text-metalLight">›</span> Listening: Telegram Sigs</div>
+                                <div class="font-mono text-xs text-muted flex items-center gap-2"><span
+                                        class="text-metalLight">›</span> Sentiment: BEARISH DETECTED</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Oracle Node -->
+                    <div class="relative">
+                        <div
+                            class="bg-metal border border-metalLight p-5 h-full relative z-10 flex flex-col hover-glow-purple">
+                            <div class="flex justify-between items-center mb-4 border-b border-metalLight pb-2">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="network" class="w-5 h-5 text-purple"></i>
+                                    <h4 class="font-display text-sm tracking-wider text-terminal">ORACLE SKILL</h4>
+                                </div>
+                                <span class="text-[10px] font-mono px-2 py-1 bg-metalLight text-muted">SYNCED</span>
+                            </div>
+                            <div class="space-y-2 flex-grow">
+                                <div class="font-mono text-xs text-muted flex items-center gap-2"><span
+                                        class="text-metalLight">›</span> Pyth Network: HBAR @ $0.11</div>
+                                <div class="font-mono text-xs text-muted flex items-center gap-2"><span
+                                        class="text-metalLight">›</span> Chainlink: Connected</div>
+                                <div class="font-mono text-xs text-muted flex items-center gap-2"><span
+                                        class="text-metalLight">›</span> Latency: 42ms</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hedera Node -->
+                    <div class="relative">
+                        <div
+                            class="bg-metal border border-metalLight p-5 h-full relative z-10 flex flex-col hover-glow-purple">
+                            <div class="flex justify-between items-center mb-4 border-b border-metalLight pb-2">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="server" class="w-5 h-5 text-terminal"></i>
+                                    <h4 class="font-display text-sm tracking-wider text-terminal">HEDERA SKILL</h4>
+                                </div>
+                                <span class="text-[10px] font-mono px-2 py-1 bg-metalLight text-muted">READY</span>
+                            </div>
+                            <div class="space-y-2 flex-grow">
+                                <div class="font-mono text-xs text-muted flex items-center gap-2"><span
+                                        class="text-metalLight">›</span> RPC Endpoints: Healthy</div>
+                                <div class="font-mono text-xs text-muted flex items-center gap-2"><span
+                                        class="text-metalLight">›</span> Gas Check: Sufficient</div>
+                                <div class="font-mono text-xs text-muted flex items-center gap-2"><span
+                                        class="text-metalLight">›</span> Smart Contract ABI: Loaded</div>
+                            </div>
+                        </div>
+                        <div class="absolute top-1/2 left-[-24px] w-6 h-px bg-magenta z-0 hidden md:block">
+                            <div class="w-full h-full animated-line"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="absolute left-1/2 bottom-[-48px] w-px h-12 bg-metal -translate-x-1/2 z-0 hidden md:block">
+                    <div class="w-full h-full animated-line"></div>
+                </div>
+            </section>
+
+            <!-- LAYER 4: ON-CHAIN LAYER -->
+            <section class="relative pt-6">
+                <div
+                    class="bg-void border border-metal p-8 flex flex-col md:flex-row justify-between items-center gap-8 shadow-[inset_0_0_20px_rgba(26,27,38,0.8)]">
+                    <div class="flex flex-col items-start w-full md:w-1/3">
+                        <h2 class="font-display text-lg text-[#4A5568] tracking-widest mb-2">[ ON-CHAIN BASE ]</h2>
+                        <p class="font-mono text-xs text-[#4A5568]">Immutable execution layer.</p>
+                    </div>
+
+                    <div
+                        class="flex items-center justify-around w-full md:w-2/3 text-[#4A5568] font-display text-sm gap-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-metal"></div>
+                            HEDERA MAINNET
+                        </div>
+                        <i data-lucide="arrow-right" class="w-4 h-4 opacity-50"></i>
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-metal"></div>
+                            BONZO VAULTS
+                        </div>
+                        <i data-lucide="arrow-right" class="w-4 h-4 opacity-50"></i>
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-metal"></div>
+                            SAUCERSWAP
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <!-- JavaScript Interactions -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Utilities
+        const getTime = () => {
+            const now = new Date();
+            return now.toLocaleTimeString([], { hour12: false });
+        };
+
+        // Set initial time
+        document.getElementById('initial-time').textContent = `SYS.TIME: ${getTime()}`;
+
+        // View Toggling logic
+        const toggleBtn = document.getElementById('xray-toggle');
+        const viewChat = document.getElementById('view-chat');
+        const viewXray = document.getElementById('view-xray');
+        let isXRayMode = false;
+
+        toggleBtn.addEventListener('click', () => {
+            isXRayMode = !isXRayMode;
+
+            if (isXRayMode) {
+                // Switch to X-Ray
+                viewChat.classList.add('hidden');
+                viewChat.classList.remove('flex');
+
+                viewXray.classList.remove('hidden');
+                viewXray.classList.add('flex');
+
+                // Update button styles
+                toggleBtn.classList.add('bg-purple', 'text-white', 'shadow-[0_0_15px_rgba(138,43,226,0.6)]');
+                toggleBtn.classList.remove('bg-transparent', 'text-purple');
+                toggleBtn.innerHTML = `<i data-lucide="eye-off" class="w-4 h-4"></i><span>[ X-RAY VIEW ]</span>`;
+            } else {
+                // Switch to Chat
+                viewXray.classList.add('hidden');
+                viewXray.classList.remove('flex');
+
+                viewChat.classList.remove('hidden');
+                viewChat.classList.add('flex');
+
+                // Update button styles
+                toggleBtn.classList.remove('bg-purple', 'text-white', 'shadow-[0_0_15px_rgba(138,43,226,0.6)]');
+                toggleBtn.classList.add('bg-transparent', 'text-purple');
+                toggleBtn.innerHTML = `<i data-lucide="eye" class="w-4 h-4"></i><span>[ X-RAY VIEW ]</span>`;
+            }
+            lucide.createIcons(); // Re-initialize new icons
+        });
+
+        // Chat Logic
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const chatHistory = document.getElementById('chat-history');
+
+        const appendUserMessage = (text) => {
+            const html = `
+                <div class="flex flex-col w-full items-end fade-in-up">
+                    <div class="p-3 bg-metalLight border border-metal text-terminal text-sm flex items-center gap-3">
+                        <span class="text-muted text-xs">USR: ${getTime()}</span>
+                        <span>${text}</span>
+                    </div>
+                </div>
+            `;
+            chatHistory.insertAdjacentHTML('beforeend', html);
+        };
+
+        const appendAgentMessage = (type, title, text) => {
+            let colors = {
+                border: '#8A2BE2', // default purple
+                icon: 'activity',
+                textTitle: 'text-purple',
+                shadow: ''
+            };
+
+            if (type === 'success') {
+                colors.border = '#00FF7F';
+                colors.icon = 'zap';
+                colors.textTitle = 'text-[#00FF7F]';
+            } else if (type === 'alert') {
+                colors.border = '#FF007F';
+                colors.icon = 'shield-alert';
+                colors.textTitle = 'text-magenta';
+                colors.shadow = 'shadow-[0_0_15px_rgba(255,0,127,0.15)]';
+            }
+
+            const html = `
+                <div class="flex flex-col w-full items-start fade-in-up">
+                    <div class="p-4 bg-metal border-t border-r border-b border-metalLight border-l-2 ${colors.shadow}" style="border-left-color: ${colors.border}">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i data-lucide="${colors.icon}" class="w-4 h-4 ${colors.textTitle}"></i>
+                            <span class="font-display font-bold text-sm ${colors.textTitle}">${title}</span>
+                            <span class="text-muted text-xs ml-4">SYS.TIME: ${getTime()}</span>
+                        </div>
+                        <p class="text-terminal text-sm leading-relaxed">${text}</p>
+                    </div>
+                </div>
+            `;
+            chatHistory.insertAdjacentHTML('beforeend', html);
+            lucide.createIcons(); // Re-initialize icons for new messages
+
+            // Auto scroll to bottom
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        };
+
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            // 1. Add user message
+            appendUserMessage(text);
+            chatInput.value = '';
+
+            // 2. Simulate agent response if 'withdraw' is typed
+            if (text.toLowerCase().includes('withdraw')) {
+                setTimeout(() => {
+                    appendAgentMessage('agent', '[ EXECUTION RUNTIME ]', 'Initiating withdrawal from Bonzo Vault. Transaction signed locally. Bridging to Hedera Mainnet...');
+                }, 1000);
+
+                setTimeout(() => {
+                    appendAgentMessage('success', '[ CONFIRMED ]', 'Funds successfully withdrawn to your Sentry wallet. TX Hash: 0x8f9c...4a2b.');
+                }, 2500);
+            }
+        });
+    </script>
+</body>
+
+</html>
