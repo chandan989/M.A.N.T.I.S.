@@ -16,7 +16,7 @@ Every `SENTRY_INTERVAL_SECONDS` (default: **60 seconds**), the agent runs this s
 │  2. THINK    → LLM evaluates context against thresholds         │
 │  3. DECIDE   → Action selected (or NO-OP)                      │
 │  4. EXECUTE  → Hedera Skill submits signed transaction          │
-│  5. REPORT   → Comms Skill notifies user                        │
+│  5. LOG      → Action & metrics written to dashboard log        │
 │  6. REMEMBER → Memory Skill updates persistent state            │
 │                                                                  │
 │  TICK END → sleep until next interval                           │
@@ -64,8 +64,7 @@ const [sentryData, oracleData, vaultData] = await Promise.all([
     "current_apy": 14.2
   },
   "user": {
-    "risk_profile": "moderate",
-    "last_notified_hours_ago": 6.2
+    "risk_profile": "moderate"
   }
 }
 ```
@@ -89,7 +88,7 @@ AVAILABLE ACTIONS:
 - TIGHTEN_RANGE: Narrow the liquidity range (more fees, more IL risk).
 - WIDEN_RANGE: Expand the liquidity range (less fees, less IL risk).
 - WITHDRAW_ALL: Full emergency withdrawal to single-sided stablecoin.
-- NOTIFY_ONLY: No on-chain action, but alert user of developing situation.
+- LOG_ONLY: No on-chain action, but record developing situation to the log.
 
 RISK PROFILE CONSTRAINTS for 'moderate':
 - Max single-tx value: $10,000
@@ -113,8 +112,7 @@ Return your decision as structured JSON.
     "new_range_lower": 0.062,
     "new_range_upper": 0.110
   },
-  "notify_user": true,
-  "user_message": "⚠️ HIGH VOLATILITY: I widened your Bonzo HBAR/USDC range to prevent impermanent loss.\nVol: 82% | Sentiment: Bearish\nNew range: $0.062 – $0.110\nAPY may decrease slightly but your position is now safer."
+  "log_message": "⚠️ HIGH VOLATILITY: Widened Bonzo HBAR/USDC range to prevent impermanent loss. Vol: 82% | Sentiment: Bearish | New range: $0.062 – $0.110"
 }
 ```
 
@@ -128,15 +126,15 @@ Before execution, a **guard layer** validates the LLM's plan:
 |---|---|---|
 | Min harvest interval | `last_harvest < 2h` → block HARVEST | Downgrade to NO_OP |
 | Risk profile ceiling | Action exceeds risk profile | Downgrade to safer action |
-| Cooldown | Same action taken 3× in a row | Force NOTIFY_ONLY |
+| Cooldown | Same action taken 3× in a row | Force LOG_ONLY |
 | Sanity check | `new_range_lower >= new_range_upper` | Error + NO_OP |
-| Balance check | Sufficient gas/HBAR in wallet | Alert user if low |
+| Balance check | Sufficient gas/HBAR in wallet | Log alert if low |
 
 ---
 
 ## Step 4: EXECUTE — On-Chain Interaction
 
-If the action is not `NO_OP` , the Hedera Skill builds and signs the transaction:
+If the action is not `NO_OP`, the Hedera Skill builds and signs the transaction:
 
 ```typescript
 // Example: WIDEN_RANGE
@@ -146,7 +144,7 @@ const tx = await hederaAgentKit
     newLower: params.new_range_lower,
     newUpper: params.new_range_upper,
   })
-  .sign(localPrivateKey)
+  .sign(serverPrivateKey)
   .execute();
 
 await tx.getReceipt(client); // Wait for confirmation
@@ -154,13 +152,16 @@ await tx.getReceipt(client); // Wait for confirmation
 
 ---
 
-## Step 5 & 6: REPORT & REMEMBER
+## Step 5 & 6: LOG & REMEMBER
 
 ```typescript
-// Notify user
-if (plan.notify_user) {
-  await commsSkill.sendMessage(plan.user_message + `\nTx: ${tx.transactionId}`);
-}
+// Log to dashboard
+await dashboardLogger.write({
+  action: plan.action,
+  message: plan.log_message,
+  txId: tx.transactionId,
+  timestamp: Date.now(),
+});
 
 // Persist state
 await memorySkill.update({
@@ -189,14 +190,14 @@ await memorySkill.update({
 
 ---
 
-## User-Defined Triggers (NL Commands)
+## User-Defined Overrides (Dashboard Controls)
 
-Users can set custom vigilance conditions via Telegram:
+Users can set custom override conditions through the M.A.N.T.I.S. web dashboard:
 
-| User Command | Agent Interpretation | Condition Type |
+| Dashboard Action | Agent Interpretation | Condition Type |
 |---|---|---|
-| "If HBAR drops below $0.08, withdraw" | Set price alert + action | Price trigger |
-| "I'm going to sleep, be conservative" | Override risk profile to `conservative` until next message | Temporal override |
-| "Harvest now" | Immediate manual harvest | Instant action |
-| "Show me my current position" | Read-only status query | Query |
-| "Stop trading, just monitor" | Set `execution_paused = true` | Mode override |
+| Set price alert: HBAR < $0.08 → withdraw | Monitored price trigger with auto-action | Price trigger |
+| Switch to Conservative mode | Override risk profile to `conservative` | Profile override |
+| Trigger harvest now | Immediate manual harvest (bypasses interval guard) | Instant action |
+| View current position | Read-only status fetch | Query |
+| Pause execution | Set `execution_paused = true` | Mode override |

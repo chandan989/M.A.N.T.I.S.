@@ -112,7 +112,7 @@ ORACLES_HBAR_PAIR=HBAR_USDC
 **Dependencies:**
 - [Hedera Agent Kit](https://github.com/hedera-dev/hedera-agent-kit)
 - Bonzo Finance Vault ABI (stored in `src/contracts/bonzo/`)
-- Local private key (from `.env`, never transmitted)
+- Server-side private key (from encrypted secret store, never transmitted)
 
 **Read Operations:**
 ```typescript
@@ -154,48 +154,13 @@ BONZO_VAULT_ID=0.0.XXXXXXX
 
 ---
 
-## 4. Comms Skill
-
-**Purpose:** Bidirectional communication with the user. Sends proactive alerts and receives natural language commands.
-
-**Supported Channels:**
-- **Telegram** (primary, fully implemented)
-- **WhatsApp Business API** (secondary)
-- **Signal** (future)
-
-**Outbound (Agent → User):**
-```typescript
-await commsSkill.sendMessage(text: string): Promise<void>
-await commsSkill.sendAlert(level: "INFO" | "WARNING" | "CRITICAL", text: string): Promise<void>
-```
-
-**Inbound (User → Agent):**
-Commands received via Telegram webhook are parsed by the LLM into structured intents:
-
-| Raw Command | Parsed Intent |
-|---|---|
-| "what's my apy?" | `{ intent: "QUERY_APY" }` |
-| "harvest now" | `{ intent: "MANUAL_HARVEST" }` |
-| "if hbar drops below 0.07 withdraw" | `{ intent: "SET_PRICE_ALERT", threshold: 0.07, action: "WITHDRAW_ALL" }` |
-| "be conservative tonight" | `{ intent: "OVERRIDE_RISK_PROFILE", profile: "conservative", duration: "until_next_message" }` |
-| "stop trading" | `{ intent: "PAUSE_EXECUTION" }` |
-
-**Configuration (`.env`):**
-```env
-TELEGRAM_BOT_TOKEN=...
-TELEGRAM_CHAT_ID=...
-COMMS_CHANNEL=telegram               # telegram | whatsapp
-```
-
----
-
-## 5. Memory Skill
+## 4. Memory Skill
 
 **Purpose:** Persists agent state across restarts and provides context for decision-making.
 
 **Storage:**
 - Development: Local JSON file (`data/state.json`)
-- Production: SQLite (`data/mantis.db`)
+- Production: Cloud database (PostgreSQL / SQLite)
 
 **Stored State:**
 ```typescript
@@ -210,8 +175,8 @@ interface AgentState {
 
 **Configuration (`.env`):**
 ```env
-MEMORY_BACKEND=sqlite                # json | sqlite
-MEMORY_DB_PATH=./data/mantis.db
+MEMORY_BACKEND=postgres              # json | sqlite | postgres
+MEMORY_DB_URL=postgresql://...
 ```
 
 ---

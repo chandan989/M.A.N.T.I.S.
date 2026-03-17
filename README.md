@@ -13,12 +13,14 @@
 
 Traditional DeFi vaults are **reactive** — they harvest rewards on a schedule, rebalance only after impermanent loss has already occurred, and rely entirely on human intervention during volatile market events.
 
-**M.A.N.T.I.S.** flips this paradigm. It is a **continuously running, self-hosted intelligent agent** that:
+**M.A.N.T.I.S.** flips this paradigm. It is a **continuously running, always-online intelligent agent** that:
 
 - 📡 **Senses** the market via on-chain oracle feeds (SupraOracles / Pyth) and off-chain sentiment (Twitter/X, news, Polymarket)
 - 🧠 **Reasons** about what action to take using an LLM reasoning engine (Claude / GPT)
 - ⚡ **Executes** signed Hedera transactions autonomously via the **Hedera Agent Kit** — no human approval required
-- 💬 **Communicates** outcomes and alerts to the user via **Telegram / WhatsApp** in plain English
+- 🖥️ **Visualises** agent activity, decisions and vault status through a **live web dashboard**
+
+> M.A.N.T.I.S. is a **hosted service** — it runs 24/7 in the cloud. You interact with it via the web dashboard; there is nothing to install or run on your local machine.
 
 ---
 
@@ -27,18 +29,17 @@ Traditional DeFi vaults are **reactive** — they harvest rewards on a schedule,
 ```
 ======================================================================
                      [ USER INTERFACE LAYER ]
-            (Messaging-First: Telegram / WhatsApp / Signal)
+                    (Web Dashboard — always online)
 
-  "Hey, a whale just dumped HBAR. I preemptively narrowed
-   your Bonzo Vault range to minimize impermanent loss.
-   Current APY: 14%. Reply 'withdraw' if you want out."
+    Real-time agent logs · Vault position · APY history ·
+    Manual override controls · Risk profile settings
 ======================================================================
                                ▲  │
-         (Push Notifications)  │  │ (Natural Language Commands)
+         (Status / Logs)       │  │ (Override Commands)
                                │  ▼
 ======================================================================
                     [ THE CORE AGENT RUNTIME ]
-         (Self-Hosted / Local Node / Continuous Execution)
+         (Hosted / Cloud Node / Continuous Execution 24/7)
 
   [ Memory & Context ]                 [ Reasoning Engine ]
   - User Risk Profile (Aggressive/Safe)- LLM (Claude/GPT/DeepSeek)
@@ -54,7 +55,7 @@ Traditional DeFi vaults are **reactive** — they harvest rewards on a schedule,
 
   [ Sentry Skill ]        [ Oracle Skill ]        [ Hedera Skill ]
   - Scans Twitter/News    - Fetches Pyth/       - HEDERA AGENT KIT
-  - Monitors Hedera HCS     SupraOracles Data   - Wallet Signer (Local)
+  - Monitors Hedera HCS     SupraOracles Data   - Wallet Signer
   - Tracks Polymarket     - Calculates 24h      - Bonzo Contract ABI
     sentiment               Volatility            Integration
 ======================================================================
@@ -81,8 +82,7 @@ For a deeper dive, see [**`docs/ARCHITECTURE.md`**](docs/ARCHITECTURE.md).
 | **Sentry Skill** | Social & narrative intelligence | Twitter/X API, CryptoPanic, Polymarket |
 | **Oracle Skill** | On-chain price & volatility feeds | SupraOracles, Pyth Network, Hedera HCS |
 | **Hedera Skill** | Transaction signing & execution | Hedera Agent Kit, Bonzo Finance ABIs |
-| **Memory Skill** | Persistent state & user profiles | Local JSON / SQLite store |
-| **Comms Skill** | User notifications & NL commands | Telegram Bot API, Signal |
+| **Memory Skill** | Persistent state & user profiles | Cloud database / SQLite store |
 
 ---
 
@@ -94,106 +94,25 @@ Every 60s:
   2. [Oracle]  → Fetch HBAR/USDC price + 24h realized volatility
   3. [Reason]  → LLM evaluates: "Should I act?"
   4. [Execute] → If threshold crossed → call Bonzo Vault via Hedera Skill
-  5. [Comms]   → Notify user of action or status update
+  5. [Log]     → Record action & metrics to dashboard
 ```
 
 See [**`docs/DECISION_LOOP.md`**](docs/DECISION_LOOP.md) for the full logic tree.
 
 ---
 
-## 🚀 Quickstart
-
-### Prerequisites
-
-- Node.js ≥ 18 / Python ≥ 3.11
-- A funded Hedera testnet account (get one at [portal.hedera.com](https://portal.hedera.com))
-- Hedera Agent Kit installed
-- API keys: LLM provider + Telegram Bot + data feeds
-
-### 1. Clone & Install
-
-```bash
-git clone https://github.com/your-org/mantis.git
-cd mantis
-npm install        # or: pip install -r requirements.txt
-```
-
-### 2. Configure Environment
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env`:
-
-```env
-# Hedera
-HEDERA_ACCOUNT_ID=0.0.XXXXXX
-HEDERA_PRIVATE_KEY=302e...          # Stored locally — never sent to cloud
-
-# LLM Reasoning Engine
-OPENAI_API_KEY=sk-...               # Or ANTHROPIC_API_KEY / DEEPSEEK_API_KEY
-
-# Data Feeds
-SUPRA_ORACLE_API_KEY=...
-TWITTER_BEARER_TOKEN=...
-
-# User Comms
-TELEGRAM_BOT_TOKEN=...
-TELEGRAM_CHAT_ID=...
-
-# Agent Behavior
-RISK_PROFILE=moderate               # conservative | moderate | aggressive
-VOLATILITY_THRESHOLD=0.15           # 15% 24h move triggers rebalance
-SENTIMENT_THRESHOLD=-0.4            # Negative score below -0.4 triggers harvest
-SENTRY_INTERVAL_SECONDS=60
-```
-
-### 3. Run the Agent
-
-```bash
-npm run start      # or: python main.py
-```
-
-M.A.N.T.I.S. will begin its sentry loop and send you a Telegram confirmation message.
-
----
-
 ## 🛡️ Security Design
 
-> **Your keys never leave your machine.**
+> **Your keys are protected through secure cloud key management.**
 
-M.A.N.T.I.S. is designed to be **self-hosted**. Unlike cloud-based DeFi bots that require uploading your private key to a server, M.A.N.T.I.S. runs on *your* hardware. The Hedera Agent Kit signs transactions locally, and only the signed transaction bytes are broadcast to the Hedera network.
+M.A.N.T.I.S. is a hosted service. Private keys are stored in encrypted, access-controlled cloud secret stores (e.g., AWS Secrets Manager / HashiCorp Vault) — never in plaintext and never exposed to the dashboard or external services. The Hedera Agent Kit signs transactions server-side, and only the signed transaction bytes are broadcast to the Hedera network.
 
-- ✅ Private keys stored in local `.env` (encrypted at rest — see [docs/SECURITY.md](docs/SECURITY.md))
-- ✅ No centralized key custody
-- ✅ Minimal external permissions (read-only for data feeds, write-only for Telegram)
+- ✅ Private keys held in encrypted server-side secret store
+- ✅ No plaintext key exposure at any layer
 - ✅ All Hedera transactions are auditable on [HashScan](https://hashscan.io)
+- ✅ Guard layer validates every LLM action plan before execution
 
----
-
-## 💬 Messaging Interface Examples
-
-M.A.N.T.I.S. communicates with you in plain English via Telegram:
-
-**Agent → User (proactive alert):**
-```
-🔴 HIGH VOLATILITY DETECTED
-HBAR dropped 12% in 90 minutes. Realized vol: 82%.
-Action taken: Widened your Bonzo HBAR/USDC range by 40%.
-This prevents your position from going out-of-range.
-Current APY: 11.2% | Tx: 0xabc...def ✅
-```
-
-**User → Agent (natural language command):**
-```
-User:  "I'm going to sleep. If HBAR drops below $0.08, 
-        move my Bonzo position to USDC."
-
-Agent: "Confirmed. Monitoring HBAR price continuously.
-        Threshold set: $0.08 → auto-withdraw to USDC.
-        I'll message you if triggered. Sleep well 🌙"
-```
+See [**`docs/SECURITY.md`**](docs/SECURITY.md) for the full threat model.
 
 ---
 
@@ -216,10 +135,10 @@ mantis/
 │   │   ├── sentry/           # Twitter/news sentiment scanner
 │   │   ├── oracle/           # Price & volatility feeds
 │   │   ├── hedera/           # Hedera Agent Kit integration
-│   │   ├── comms/            # Telegram/WhatsApp notifications
 │   │   └── memory/           # User profile & vault state
 │   └── contracts/
 │       └── bonzo/            # Bonzo Vault ABI definitions
+├── dashboard/                # Web dashboard (React)
 ├── config/
 │   └── risk-profiles.json    # Preset risk parameters
 ├── .env.example
@@ -236,11 +155,10 @@ mantis/
 - [ ] Sentry Skill (Twitter/X sentiment + CryptoPanic)
 - [ ] Hedera Skill (Bonzo Vault contract integration)
 - [ ] Core reasoning loop with LLM
-- [ ] Telegram Comms Skill
 - [ ] User risk profile configuration
 - [ ] Persistent memory / state management
-- [ ] Web dashboard (optional)
-- [ ] Mainnet deployment guide
+- [ ] Web dashboard (live agent logs & vault stats)
+- [ ] Mainnet deployment
 
 ---
 

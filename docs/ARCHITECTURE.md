@@ -16,20 +16,20 @@
 3. [Data Flow Diagram](#3-data-flow-diagram)
 4. [Component Interactions](#4-component-interactions)
 5. [Technology Choices & Rationale](#5-technology-choices--rationale)
-6. [Deployment Models](#6-deployment-models)
+6. [Deployment Model](#6-deployment-model)
 
 ---
 
 ## 1. High-Level Overview
 
-M.A.N.T.I.S. is a **four-layer autonomous agent** that bridges off-chain intelligence with on-chain DeFi execution on the Hedera network.
+M.A.N.T.I.S. is a **four-layer autonomous agent** that bridges off-chain intelligence with on-chain DeFi execution on the Hedera network. It runs as a **hosted, always-online service** — users interact with it through a web dashboard without installing or running anything locally.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                USER INTERFACE LAYER                     │
-│         Telegram · WhatsApp · Signal · CLI             │
+│              Web Dashboard (always online)             │
 └─────────────────────┬───────────────────────────────────┘
-                      │ Natural Language Commands / Alerts
+                      │ Override Commands / Status Queries
 ┌─────────────────────▼───────────────────────────────────┐
 │               CORE AGENT RUNTIME                        │
 │     Memory Store · LLM Reasoner · Scheduler · Logger   │
@@ -37,7 +37,7 @@ M.A.N.T.I.S. is a **four-layer autonomous agent** that bridges off-chain intelli
        │ Tool Calls (read + write)
 ┌──────▼──────────────────────────────────────────────────┐
 │                   SKILLS LAYER                          │
-│   Sentry · Oracle · Hedera · Comms · Memory Skills     │
+│       Sentry · Oracle · Hedera · Memory Skills         │
 └──────┬──────────────────────────────────────────────────┘
        │ Signed Hedera Transactions
 ┌──────▼──────────────────────────────────────────────────┐
@@ -52,26 +52,27 @@ M.A.N.T.I.S. is a **four-layer autonomous agent** that bridges off-chain intelli
 
 ### 2.1 User Interface Layer
 
-M.A.N.T.I.S. uses a **messaging-first** interface philosophy. Users should not need to open a dashboard, connect a wallet browser extension, or run CLI commands to monitor their positions during market hours.
+M.A.N.T.I.S. uses a **web-first** interface. Users access a live dashboard to monitor agent decisions, vault positions, APY history, and system logs — from any browser, with no local software required.
 
-**Supported Channels:**
-| Channel | Role |
+**Dashboard Features:**
+| Feature | Description |
 |---|---|
-| Telegram | Primary notification + command channel |
-| WhatsApp | Alternative notification channel (via WhatsApp Business API) |
-| Signal | Privacy-focused alternative |
-| CLI (`mantis chat`) | Local developer/power-user interface |
+| Live agent log | Real-time stream of every decision the agent makes |
+| Vault position view | Current liquidity range, in-range status, pending rewards |
+| APY history chart | Historical yield performance over time |
+| Risk profile settings | Switch between Conservative / Moderate / Aggressive |
+| Manual override controls | Trigger harvest, pause execution, or set price alerts |
 
 **Interaction Types:**
-- **Proactive Alerts** — Agent pushes notifications when it takes action (e.g., rebalance, harvest)
-- **Natural Language Commands** — User sends plain-English instructions the LLM interprets into vault operations
-- **Status Queries** — "What's my current APY?" → Agent fetches and responds
+- **Status Views** — Continuously updated vault and agent state
+- **Override Controls** — User-initiated actions surfaced through the dashboard UI
+- **Alert Panel** — Recent agent actions and market events highlighted in the dashboard
 
 ---
 
 ### 2.2 Core Agent Runtime
 
-The runtime is the **central orchestrator**. It runs as a persistent Node.js / Python process, waking every `SENTRY_INTERVAL_SECONDS` (default: 60s) to execute the decision loop.
+The runtime is the **central orchestrator**. It runs as a persistent cloud process, waking every `SENTRY_INTERVAL_SECONDS` (default: 60s) to execute the decision loop.
 
 #### Sub-components:
 
@@ -85,13 +86,12 @@ setInterval(async () => {
 ```
 
 **Memory Store**
-The agent persists state locally so it can make decisions based on history, not just the current snapshot.
+The agent persists state in a cloud database so it can make decisions based on history, not just the current snapshot.
 
 ```json
 {
   "user": {
     "risk_profile": "moderate",
-    "telegram_chat_id": "123456",
     "wallets": ["0.0.XXXXXX"]
   },
   "vaults": [
@@ -131,8 +131,7 @@ The LLM returns a structured `ActionPlan`:
     "new_range_lower": 0.065,
     "new_range_upper": 0.125
   },
-  "notify_user": true,
-  "message": "High volatility detected. I widened your Bonzo range to prevent impermanent loss."
+  "log_message": "High volatility detected. Widened Bonzo range to prevent impermanent loss."
 }
 ```
 
@@ -171,7 +170,7 @@ M.A.N.T.I.S. interacts with two primary contract systems:
 
 **Hedera Agent Kit**
 The bridge between the Skills Layer and on-chain execution. It handles:
-- Local key signing (private key never leaves the machine)
+- Server-side key signing (private key stored in encrypted secret store)
 - Transaction building and submission
 - Receipt confirmation and error handling
 - Mirror node queries for state reads
@@ -210,8 +209,8 @@ The bridge between the Skills Layer and on-chain execution. It handles:
                                             │ Tx Hash
                                             ▼
                                     ┌───────────────┐
-                                    │  Comms Skill  │
-                                    │ "Harvested ✅" │
+                                    │  Dashboard    │
+                                    │  "Harvested ✅"│
                                     └───────────────┘
 ```
 
@@ -236,7 +235,7 @@ Hedera Skill:
   1. Call vault.harvest()  → Tx 0xaaa
   2. Call swap(HBAR→USDC) → Tx 0xbbb
 
-Comms Skill:
+Dashboard Log:
   "🟡 EARLY HARVEST TRIGGERED
    Sentiment score: -0.72 (very bearish)
    Harvested 142 HBAR → swapped to 11.94 USDC
@@ -252,22 +251,25 @@ Comms Skill:
 |---|---|---|
 | **Hedera Agent Kit** | Direct SDK calls | Pre-built abstractions for agent-friendly DeFi ops |
 | **LLM-based reasoning** | Rule-based if/else | Handles nuance, edge cases, and natural language |
-| **Telegram for UX** | Web dashboard | Always accessible, no wallet connection required |
-| **Local execution** | Cloud-hosted bot | User retains key custody; no centralized risk |
+| **Web dashboard for UX** | Messaging bots | Always accessible from any browser; centralised status view |
+| **Hosted cloud execution** | User-run local agent | 24/7 uptime without user managing infrastructure |
 | **Modular Skills** | Monolithic agent | Individual skills can be upgraded/replaced independently |
 | **SupraOracles + Pyth** | Chainlink (EVM) | Native Hedera oracle integrations, lower latency |
 
 ---
 
-## 6. Deployment Models
+## 6. Deployment Model
 
-### Option A: Personal Laptop / Desktop
-Run `npm start` on your Mac/PC. Agent runs 24/7 while machine is on. Simple; keys stay on your device.
+M.A.N.T.I.S. runs as a **hosted cloud service** managed by Elykid Private Limited. Users do not need to install, configure, or run anything on their own machines.
 
-### Option B: Raspberry Pi / Home Server
-Always-on local server. Recommended for production use. Set up as a `systemd` service for auto-restart.
+### Infrastructure
 
-### Option C: Private VPS (Advanced)
-Run on a private VPS (e.g., Hetzner, DigitalOcean). Use encrypted key storage (e.g., HashiCorp Vault or OS keychain). **Do NOT use shared hosting.**
+| Component | Hosting |
+|---|---|
+| Agent Runtime | Cloud VM (always-on, auto-restart via process manager) |
+| Memory / State | Managed cloud database (PostgreSQL / SQLite) |
+| Private Key Storage | Encrypted cloud secret store (AWS Secrets Manager / HashiCorp Vault) |
+| Web Dashboard | Static frontend served via CDN |
+| Hedera RPC | Hedera mirror node + mainnet/testnet endpoints |
 
-> ⚠️ **Never** host M.A.N.T.I.S. on a platform that requires uploading your `.env` or private keys to a web interface (e.g., Heroku, Vercel, Railway with env vars exposed in CI logs).
+> ⚠️ **Security note:** Private keys are stored exclusively in the encrypted server-side secret store and are never exposed via the dashboard, API responses, or logs.
