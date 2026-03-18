@@ -1,0 +1,29 @@
+.skills-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.skills-full {
+  grid-column: 1 / -1;
+}
+.risk-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.risk-option {
+  cursor: pointer;
+  padding: 4px 0;
+  display: flex;
+  gap: 8px;
+}
+.risk-option:hover {
+  color: var(--color-white);
+}
+.risk-option--active {
+  color: var(--color-white);
+}
+.risk-details {
+  color: var(--color-dim);
+  font-size: 0.85rem;
+}

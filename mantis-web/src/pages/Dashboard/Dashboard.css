@@ -1,0 +1,35 @@
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: 65% 35%;
+  gap: 8px;
+}
+.dashboard-left, .dashboard-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.execution-log {
+  height: 400px;
+  overflow-y: auto;
+  font-size: 13px;
+}
+.execution-log__entry {
+  padding: 1px 0;
+  white-space: nowrap;
+}
+.log-timestamp {
+  color: var(--color-dim);
+}
+.log-phase {
+  color: var(--color-primary);
+  display: inline-block;
+  width: 60px;
+}
+.log-phase--err {
+  color: var(--color-error);
+}
+.quick-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}

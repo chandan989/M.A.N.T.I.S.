@@ -1,0 +1,31 @@
+.system-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.system-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.system-toggles > div {
+  padding: 4px 0;
+}
+.system-wallet > div {
+  padding: 2px 0;
+}
+.alert-form label {
+  color: var(--color-dim);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.85rem;
+}
+.alert-form > div {
+  margin-bottom: 8px;
+}
+.about-box {
+  white-space: pre;
+  color: var(--color-white);
+  line-height: 1.3;
+}
