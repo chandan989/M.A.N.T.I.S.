@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claw-Fi | Neon Sentry Architecture</title>
+    <title>M.A.N.T.I.S. | Neon Sentry Architecture</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -141,9 +141,9 @@
     <header class="border-b border-white/5 glass-panel sticky top-0 z-40 fade-in-up" style="border-radius: 0 0 20px 20px; border-top: none; margin: 0 10px;">
         <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <i data-lucide="hexagon" class="text-primary animate-pulse w-7 h-7 shadow-lg shadow-primary/20 rounded-full"></i>
+                <img src="Logo.svg" alt="Mantis Logo" class="w-8 h-8 object-contain" style="filter: drop-shadow(0 0 8px rgba(131,61,206,0.6));" />
                 <h1 class="text-2xl font-display font-medium tracking-widest text-textMain" style="letter-spacing: 0.2em;">
-                    CLAW<span class="text-accent ml-1">-</span>FI
+                    M.A.N.T.I.S.
                 </h1>
             </div>
 
@@ -158,55 +158,8 @@
     <!-- MAIN CONTENT AREA -->
     <main class="flex-grow max-w-6xl mx-auto w-full p-6 flex flex-col relative">
 
-        <!-- LAYER 1: USER INTERFACE (MESSAGING-FIRST) -->
-        <div id="view-chat" class="flex-grow flex flex-col justify-end max-w-3xl mx-auto w-full mt-12 mb-8 fade-in">
-            <div class="text-center mb-12">
-                <h2 class="font-display text-4xl font-light mb-4 text-textMain tracking-wide glow-text" style="text-shadow: 0 0 20px rgba(248, 247, 250, 0.2);">INVISIBLE COMPLEXITY</h2>
-                <p class="text-muted max-w-xl mx-auto text-base leading-relaxed font-light">
-                    You don't need to monitor dashboards. Claw-Fi's autonomous agent runs locally, continuously
-                    adjusting your positions and defending against market volatility.
-                </p>
-            </div>
-
-            <div id="chat-history" class="space-y-6 mb-8 flex-grow flex flex-col justify-end">
-                <!-- Initial Sentry Alert -->
-                <div class="flex flex-col w-full items-start fade-in-up">
-                    <div
-                        class="p-5 glass-panel rounded-2xl rounded-tl-sm border border-secondary/30 relative overflow-hidden glow-secondary">
-                        <div class="absolute top-0 left-0 w-1 h-full bg-secondary"></div>
-                        <div class="flex items-center gap-2 mb-3">
-                            <div class="p-1.5 rounded-full bg-secondary/20 mr-1">
-                                <i data-lucide="shield-alert" class="w-4 h-4 text-secondary animate-pulse"></i>
-                            </div>
-                            <span class="font-display font-medium tracking-wide text-sm text-secondary">[ SENTRY ALERT ]</span>
-                            <span class="text-muted/60 text-xs ml-4 tracking-widest font-display" id="initial-time"></span>
-                        </div>
-                        <p class="text-textMain/90 text-[15px] leading-relaxed font-light">
-                            Hey, a whale just dumped HBAR. I preemptively narrowed your Bonzo Vault range to minimize
-                            impermanent loss. Current APY: <span class="font-medium text-accent">14%</span>. Reply 'withdraw' if you want out.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <form id="chat-form" class="relative group mt-4">
-                <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                    <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
-                        <i data-lucide="sparkles" class="w-4 h-4 text-accent"></i>
-                    </div>
-                </div>
-                <input type="text" id="chat-input" autocomplete="off"
-                    placeholder="Awaiting your command... (Try typing 'withdraw')"
-                    class="w-full glass-panel text-textMain pl-[4.5rem] pr-32 py-5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition-smooth text-lg shadow-[0_4px_30px_rgba(0,0,0,0.5)] placeholder:text-muted/50" />
-                <button type="submit"
-                    class="absolute right-2.5 top-2.5 bottom-2.5 px-6 bg-primary hover:bg-primary/90 text-white font-display text-sm tracking-wider transition-smooth rounded-xl shadow-[0_0_20px_rgba(131,61,206,0.4)] flex items-center gap-2">
-                    EXECUTE <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                </button>
-            </form>
-        </div>
-
-        <!-- LAYERS 2, 3, 4: ARCHITECTURE DASHBOARD (Hidden by default) -->
-        <div id="view-xray" class="hidden flex-grow flex-col space-y-12 py-8 fade-in">
+        <!-- ARCHITECTURE DASHBOARD -->
+        <div id="view-xray" class="flex-grow flex-col space-y-12 py-8 fade-in flex">
 
             <!-- LAYER 2: THE CORE AGENT RUNTIME -->
             <section class="relative">
@@ -221,19 +174,19 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                     <!-- Memory & Context -->
                     <div class="glass-panel p-7 hover-glow rounded-3xl transition-smooth group border-white/5">
-                        <h3 class="text-muted font-display text-sm tracking-wider mb-5 border-b border-white/5 pb-3">MEMORY & CONTEXT</h3>
+                        <h3 class="text-muted font-display text-sm tracking-wider mb-5 border-b border-black/5 pb-3">MEMORY & CONTEXT</h3>
                         <div class="space-y-4 font-sans text-[15px] text-textMain/80 font-light">
-                            <div class="flex justify-between items-center bg-surfaceLight/40 p-3.5 rounded-xl border border-white/5 group-hover:border-primary/20 transition-smooth">
-                                <span>Active Position:</span> <span class="text-accent font-medium glow-text shadow-accent/50">Bonzo Vault USDC/HBAR</span>
+                            <div class="flex justify-between items-center bg-black/5 p-3.5 rounded-xl border border-black/5 group-hover:border-primary/20 transition-smooth">
+                                <span>Active Position:</span> <span class="text-primary font-medium shadow-accent/50">Bonzo Vault USDC/HBAR</span>
                             </div>
-                            <div class="flex justify-between items-center bg-surfaceLight/40 p-3.5 rounded-xl border border-white/5 transition-smooth">
+                            <div class="flex justify-between items-center bg-black/5 p-3.5 rounded-xl border border-black/5 transition-smooth">
                                 <span>Risk Tolerance:</span> <span class="text-textMain">Moderate (Alpha)</span>
                             </div>
-                            <div class="flex justify-between items-center bg-surfaceLight/40 p-3.5 rounded-xl border border-white/5 transition-smooth">
+                            <div class="flex justify-between items-center bg-black/5 p-3.5 rounded-xl border border-black/5 transition-smooth">
                                 <span>Pre-Auth Limits:</span> <span class="text-textMain">Max Slippage 0.5%</span>
                             </div>
-                            <div class="flex justify-between items-center bg-surfaceLight/40 p-3.5 rounded-xl border border-white/5 transition-smooth">
-                                <span>Local Wallet State:</span> <span class="text-accent">Encrypted & Synced</span>
+                            <div class="flex justify-between items-center bg-black/5 p-3.5 rounded-xl border border-black/5 transition-smooth">
+                                <span>Cloud Node State:</span> <span class="text-primary font-medium">Secured & Syced</span>
                             </div>
                         </div>
                     </div>
