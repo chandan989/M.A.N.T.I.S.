@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AgentProvider, useAgent } from './context/AgentContext';
+import { WalletProvider } from './context/WalletContext';
 import { AppShell } from './components/AppShell/AppShell';
 import { generateLogEntry } from './data/mockData';
+import { useWalletData } from './hooks/useWalletData';
 import Landing from './pages/Landing/Landing';
 import Dashboard from './pages/Dashboard/Dashboard';
 import VaultOps from './pages/VaultOps/VaultOps';
@@ -29,6 +31,9 @@ function LogTicker() {
 }
 
 function AppInner() {
+  // Fetches real HBAR + USDC balance from Hedera Mirror Node
+  useWalletData();
+
   return (
     <>
       <LogTicker />
@@ -44,11 +49,13 @@ function AppInner() {
 }
 
 const App = () => (
-  <AgentProvider>
-    <BrowserRouter>
-      <AppInner />
-    </BrowserRouter>
-  </AgentProvider>
+  <WalletProvider>
+    <AgentProvider>
+      <BrowserRouter>
+        <AppInner />
+      </BrowserRouter>
+    </AgentProvider>
+  </WalletProvider>
 );
 
 export default App;

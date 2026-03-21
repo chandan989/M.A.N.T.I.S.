@@ -1,9 +1,25 @@
 import { useAgent } from '../../context/AgentContext';
+import { useWallet } from '../../context/WalletContext';
 import { useLiveTick } from '../../hooks/useLiveTick';
 
 export function StatusBar() {
   const { state } = useAgent();
+  const { wallet, status: walletStatus } = useWallet();
   const tick = useLiveTick(state.lastActionTs);
+
+  const walletDisplay =
+    walletStatus === 'connected' && wallet
+      ? wallet.accountId
+      : walletStatus === 'connecting'
+        ? 'CONNECTING...'
+        : 'NOT CONNECTED';
+
+  const walletColor =
+    walletStatus === 'connected'
+      ? 'var(--color-success)'
+      : walletStatus === 'connecting'
+        ? 'var(--color-primary)'
+        : 'var(--color-error)';
 
   return (
     <div style={{
@@ -22,7 +38,9 @@ export function StatusBar() {
     }}>
       <span>SYS.MODE: <span style={{ color: state.agentRunning ? 'var(--color-success)' : 'var(--color-error)' }}>[{state.agentRunning ? 'ACTIVE' : 'PAUSED'}]</span></span>
       <span style={{ color: 'var(--color-dim)' }}>|</span>
-      <span>NET: <span style={{ color: 'var(--color-success)' }}>[MAINNET]</span></span>
+      <span>NET: <span style={{ color: wallet?.network === 'testnet' ? 'var(--color-primary)' : 'var(--color-success)' }}>[{wallet?.network?.toUpperCase() ?? 'MAINNET'}]</span></span>
+      <span style={{ color: 'var(--color-dim)' }}>|</span>
+      <span>WALLET: <span style={{ color: walletColor }}>{walletDisplay}</span></span>
       <span style={{ color: 'var(--color-dim)' }}>|</span>
       <span>VAULT: <span style={{ color: 'var(--color-success)' }}>{state.activeVaultId}</span></span>
       <span style={{ color: 'var(--color-dim)' }}>|</span>

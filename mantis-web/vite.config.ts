@@ -15,10 +15,19 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Required: hedera-wallet-connect imports @hiero-ledger/proto which lives
+      // nested inside @hashgraph/sdk's own node_modules
+      "@hiero-ledger/proto": path.resolve(
+        __dirname,
+        "node_modules/@hashgraph/sdk/node_modules/@hiero-ledger/proto"
+      ),
     },
+  },
+  define: {
+    // WalletConnect / Hedera SDK needs a global Buffer
+    global: "globalThis",
   },
   optimizeDeps: {
     include: [],
   },
 }));
-

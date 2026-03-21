@@ -21,12 +21,25 @@ export default function Dashboard() {
         <PanelBox title="SYSTEM STATUS" doubleLine>
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
             <span>SYS.MODE: <StatusTag status={state.agentRunning ? 'ACTIVE' : 'IDLE'} /></span>
-            <span>NET: <span style={{ color: 'var(--color-success)' }}>[MAINNET]</span></span>
+            <span>NET: <span style={{ color: state.network === 'testnet' ? 'var(--color-primary)' : 'var(--color-success)' }}>
+              [{state.network.toUpperCase()}]
+            </span></span>
             <span>AGENT: <StatusTag status={state.agentRunning ? 'ACTIVE' : 'IDLE'} /></span>
           </div>
           <div style={{ marginTop: '4px' }}>
-            WALLET: <span style={{ color: 'var(--color-success)' }}>{state.walletId}</span>
-            {' '}<span style={{ color: 'var(--color-white)' }}>{state.hbarBalance.toLocaleString()} HBAR</span>
+            WALLET: <span style={{ color: state.walletId === '---' ? 'var(--color-error)' : 'var(--color-success)' }}>
+              {state.walletId}
+            </span>
+            {state.walletId !== '---' && (
+              <span style={{ marginLeft: '12px' }}>
+                <span style={{ color: 'var(--color-white)' }}>{state.hbarBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} HBAR</span>
+                {state.usdcBalance > 0 && (
+                  <span style={{ color: 'var(--color-dim)', marginLeft: '8px' }}>
+                    / {state.usdcBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC
+                  </span>
+                )}
+              </span>
+            )}
           </div>
         </PanelBox>
 

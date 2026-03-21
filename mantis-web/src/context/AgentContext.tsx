@@ -17,6 +17,7 @@ export interface AgentContextState {
   walletId: string;
   hbarBalance: number;
   usdcBalance: number;
+  network: 'mainnet' | 'testnet';
   actionInFlight: boolean;
 }
 
@@ -29,7 +30,8 @@ type Action =
   | { type: 'ADD_LOG'; payload: LogEntry }
   | { type: 'UPDATE_ORACLE'; payload: OracleData }
   | { type: 'SET_ACTION_IN_FLIGHT'; payload: boolean }
-  | { type: 'UPDATE_LAST_ACTION'; payload: { action: string; ts: number } };
+  | { type: 'UPDATE_LAST_ACTION'; payload: { action: string; ts: number } }
+  | { type: 'SET_WALLET'; payload: { walletId: string; hbarBalance: number; usdcBalance: number; network: 'mainnet' | 'testnet' } };
 
 const initialState: AgentContextState = {
   agentRunning: true,
@@ -43,9 +45,10 @@ const initialState: AgentContextState = {
   oracleData: generateOracleSnapshot(),
   sentryData: MOCK_SENTRY,
   vaultData: MOCK_VAULTS,
-  walletId: MOCK_AGENT.walletId,
-  hbarBalance: MOCK_AGENT.hbarBalance,
-  usdcBalance: MOCK_AGENT.usdcBalance,
+  walletId: '---',
+  hbarBalance: 0,
+  usdcBalance: 0,
+  network: 'testnet',
   actionInFlight: false,
 };
 
@@ -72,6 +75,14 @@ function reducer(state: AgentContextState, action: Action): AgentContextState {
       return { ...state, actionInFlight: action.payload };
     case 'UPDATE_LAST_ACTION':
       return { ...state, lastAction: action.payload.action, lastActionTs: action.payload.ts };
+    case 'SET_WALLET':
+      return {
+        ...state,
+        walletId: action.payload.walletId,
+        hbarBalance: action.payload.hbarBalance,
+        usdcBalance: action.payload.usdcBalance,
+        network: action.payload.network,
+      };
     default:
       return state;
   }
